@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ASCVD Risk Prediction for RA patients</title>
+<style>
+:root{
+  --navy:#132a46;
+  --blue:#1f77b4;
+  --teal:#17a2b8;
+  --red:#d95f5f;
+  --green:#2f9e77;
+  --ink:#17202a;
+  --muted:#6b7c8d;
+  --line:#dce6f1;
+  --bg:#f4f7fb;
+  --card:#ffffff;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,Arial,"Helvetica Neue",sans-serif}
+.hero{background:radial-gradient(circle at 20% 10%,rgba(31,119,180,.28),transparent 32%),linear-gradient(135deg,#0f2744 0%,#17365d 55%,#0b7285 100%);color:#fff;text-align:center;padding:32px 18px 28px;border-bottom-left-radius:28px;border-bottom-right-radius:28px}
+.hero .badge{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border:1px solid rgba(255,255,255,.25);border-radius:999px;background:rgba(255,255,255,.08);font-size:13px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:18px}
+.hero h1{margin:0 auto;max-width:900px;font-size:clamp(24px,3.4vw,38px);line-height:1.12;font-weight:800}
+.hero p{margin:10px auto 0;max-width:820px;color:rgba(255,255,255,.78);line-height:1.55;font-size:13.5px}
+.container{max-width:1180px;margin:-20px auto 24px;padding:0 16px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.card{background:var(--card);border:1px solid rgba(220,230,241,.9);border-radius:18px;box-shadow:0 14px 32px rgba(24,54,84,.08);padding:20px}
+.card-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.card-title h2{margin:0;font-size:18px}
+.pill{font-size:11px;color:var(--muted);background:#f1f5f9;border-radius:999px;padding:5px 9px}
+label{display:block;font-size:12.5px;font-weight:700;color:#40566b;margin:9px 0 5px}
+input,select{width:100%;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;background:#fbfdff;outline:none;transition:.2s}
+input:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(31,119,180,.12)}
+button{margin-top:14px;width:100%;border:0;border-radius:13px;padding:11px 16px;background:linear-gradient(135deg,var(--blue),#0b7285);color:#fff;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 8px 20px rgba(31,119,180,.22)}
+button:hover{transform:translateY(-1px)}
+.note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:10px}
+.prob-wrap{display:flex;align-items:flex-end;justify-content:space-between;margin:8px 0 12px}
+.prob{font-size:42px;font-weight:850;color:var(--red);line-height:1}
+.unit{font-size:18px;color:var(--muted);font-weight:700}
+.progress{height:12px;border-radius:999px;background:#e9eff6;overflow:hidden;position:relative}
+.progress .bar{height:100%;width:0;background:linear-gradient(90deg,var(--teal),var(--red));transition:.35s}
+.result{margin-top:12px;padding:11px 14px;border-radius:12px;font-weight:800;display:none}
+.result.low{background:#edf9f3;color:#1d7a54}
+.result.mid{background:#fff7e6;color:#b36b00}
+.result.high{background:#fdeeee;color:#b13d3d}
+.full{grid-column:1/-1}
+.contrib-divider{height:1px;background:#e6edf5;margin:16px 0 12px}
+.contrib{display:grid;grid-template-columns:160px 1fr 70px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #edf2f7}
+.contrib:last-child{border-bottom:0}
+.contrib-name{font-weight:750;color:#2c3e50;font-size:13px}
+.track{height:16px;background:#edf2f7;border-radius:999px;position:relative;overflow:hidden}
+.track:before{display:none}
+.pos{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#e76f51,var(--red));border-radius:999px}
+.neg{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--blue),#0b7285);border-radius:999px}
+.contrib-value{text-align:right;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;color:#55677a;font-weight:700}
+.legend{display:flex;gap:14px;align-items:center;justify-content:flex-end;margin-top:8px;color:var(--muted);font-size:11px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:5px}
+.footer{max-width:1180px;margin:0 auto 18px;padding:0 16px;text-align:center;color:var(--muted);font-size:12px;line-height:1.5}
+@media(max-width:860px){.container{grid-template-columns:1fr;margin-top:-16px}.hero{padding-top:28px}.prob{font-size:38px}.contrib{grid-template-columns:1fr;gap:6px}.contrib-value{text-align:left}.legend{justify-content:flex-start}}
+</style>
+</head>
+<body>
+<header class="hero">
+  <h1>🫀 ASCVD Risk Prediction for RA patients</h1>
+  <p>This tool provides an individualized prediction of ASCVD for RA patients using an offline approximation of the final XGBoost model. The prediction is intended for research demonstration and should not replace clinical judgment.</p>
+</header>
+
+<main class="container">
+  <section class="card">
+    <div class="card-title"><h2>Patient information</h2><span class="pill">Input</span></div>
+    <label for="cacs">CAC score (CACS)</label><input id="cacs" type="number" value="0" min="0">
+    <label for="age">Age (years)</label><input id="age" type="number" value="55" min="18">
+    <label for="htn">Hypertension</label><select id="htn"><option value="0">No</option><option value="1">Yes</option></select>
+    <label for="duration">RA duration (months)</label><input id="duration" type="number" value="60" min="0">
+    <label for="crp">C-reactive protein (CRP, mg/L)</label><input id="crp" type="number" value="10" min="0" step="0.1">
+    <label for="mtss">Total modified Sharp score (mTSS, 0–280)</label><input id="mtss" type="number" value="10" min="0" max="280">
+    <button onclick="predict()">Predict risk</button>
+    <p class="note">CACS is entered as the original CAC score and converted internally to Log(CACS+1). CRP should be entered in mg/L, and mTSS should range from 0 to 280.</p>
+  </section>
+
+  <section class="card">
+    <div class="card-title"><h2>Prediction output</h2><span class="pill">Result</span></div>
+    <div class="prob-wrap"><div><span id="riskText" class="prob">--</span><span class="unit">%</span></div><span class="pill">Risk tiers: &lt;23.0%, 23.0–46.8%, ≥46.8%</span></div>
+    <div class="progress"><div id="bar" class="bar"></div></div>
+    <div id="class" class="result"></div>
+    <p class="note">ROC-derived three-tier risk stratification: low risk &lt;23.0%, intermediate risk 23.0%–46.8%, and high risk ≥46.8%. The lower cutoff corresponds to 90% sensitivity, and the upper cutoff maximizes the Youden index.</p>
+    <div class="contrib-divider"></div>
+    <div class="card-title"><h2>Approximate feature contributions</h2><span class="pill">Explainability</span></div>
+    <div id="contrib"></div>
+    <div class="legend"><span><i class="dot" style="background:linear-gradient(90deg,#2f80ed,#9b51e0,#eb5757)"></i>Increases predicted risk</span></div>
+    <p class="note">Contributions are additive approximations from a distilled surrogate of the final XGBoost model.</p>
+  </section>
+</main>
+
+<footer class="footer">
+  This offline webpage is intended for research demonstration and should be externally validated before clinical use.
+</footer>
+
+<script>
+const intercept=-6.629262403238288;
+const coef=[0.30426184805604567,0.06987762207659928,1.8982437182836382,0.000289847633047723,0.004540384082345782,0.0034153621603032216];
+const names=['Log(CACS+1)','Age','Hypertension','RA duration','CRP','mTSS'];
+function sigmoid(x){return 1/(1+Math.exp(-x));}
+function predict(){
+  const cacs=parseFloat(document.getElementById('cacs').value)||0;
+  const x=[Math.log1p(cacs),parseFloat(document.getElementById('age').value)||0,parseFloat(document.getElementById('htn').value)||0,parseFloat(document.getElementById('duration').value)||0,parseFloat(document.getElementById('crp').value)||0,parseFloat(document.getElementById('mtss').value)||0];
+  let z=intercept; let contrib=[];
+  for(let i=0;i<6;i++){z+=coef[i]*x[i];contrib.push({name:names[i],value:coef[i]*x[i]});}
+  contrib.sort((a,b)=>Math.abs(b.value)-Math.abs(a.value));
+  const p=sigmoid(z); const pct=p*100;
+  document.getElementById('riskText').innerText=pct.toFixed(1);
+  document.getElementById('bar').style.width=Math.min(pct,100).toFixed(1)+'%';
+  const cls=document.getElementById('class'); cls.style.display='block';
+  if(p>=0.4682){cls.className='result high';cls.innerText='Risk classification: High risk';}else if(p>=0.23){cls.className='result mid';cls.innerText='Risk classification: Intermediate risk';}else{cls.className='result low';cls.innerText='Risk classification: Low risk';}
+  const maxAbs=Math.max(...contrib.map(d=>Math.abs(d.value)),1e-9); let html='';
+  contrib.forEach(d=>{const width=Math.max(3,Math.abs(d.value)/maxAbs*100).toFixed(1); const cls2='pos'; const opacity=(0.25+0.75*Math.abs(d.value)/maxAbs).toFixed(2); const bg=`linear-gradient(90deg,rgba(47,128,237,${opacity}) 0%,rgba(155,81,224,${opacity}) 52%,rgba(235,87,87,${opacity}) 100%)`; html+=`<div class="contrib"><div class="contrib-name">${d.name}</div><div class="track"><div class="${cls2}" style="width:${width}%;background:${bg};"></div></div><div class="contrib-value">${d.value.toFixed(3)}</div></div>`;});
+  document.getElementById('contrib').innerHTML=html;
+}
+</script>
+</body>
+</html>
